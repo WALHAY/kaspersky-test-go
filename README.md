@@ -12,7 +12,7 @@
 
 ## Запуск
 
-Нужны Docker и Docker Compose.
+Нужны Go 1.26+, Make, Docker и Docker Compose.
 
 ```sh
 cp .env.example .env
@@ -22,7 +22,7 @@ cp .env.example .env
 Для каждого значения можно отдельно выполнить `openssl rand -hex 32`.
 
 ```sh
-docker compose up --build -d
+make docker
 ```
 
 Сервис будет доступен на `http://localhost:8080`. Таблицы создаются автоматически
