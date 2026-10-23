@@ -13,7 +13,7 @@ linters:
   exclusions:
     generated: strict
     rules:
-      - path: ^api/generated\.go$
+      - path: ^generated/
         linters: [errcheck, govet, ineffassign, staticcheck, unused]
 formatters:
   enable:

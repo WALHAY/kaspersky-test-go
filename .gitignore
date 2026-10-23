@@ -6,5 +6,6 @@
 /server
 *.test
 /coverage.out
+/generated
 
 .DS_Store

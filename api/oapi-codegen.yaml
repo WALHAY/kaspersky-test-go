@@ -1,6 +1,6 @@
-package: api
+package: generated
 generate:
   models: true
   std-http-server: true
   embedded-spec: true
-output: generated.go
+output: ../generated/generated.go

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/walhay/kaspersky-go/api"
+	api "github.com/walhay/kaspersky-go/generated"
 )
 
 func (s *server) routes() http.Handler {

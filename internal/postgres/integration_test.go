@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/walhay/kaspersky-go/api"
+	api "github.com/walhay/kaspersky-go/generated"
 	"github.com/walhay/kaspersky-go/internal/httpapi"
 	"github.com/walhay/kaspersky-go/internal/postgres"
 	"github.com/walhay/kaspersky-go/internal/threat"

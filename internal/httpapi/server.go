@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/walhay/kaspersky-go/api"
+	api "github.com/walhay/kaspersky-go/generated"
 	"github.com/walhay/kaspersky-go/internal/threat"
 )
 
