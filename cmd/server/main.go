@@ -1,4 +1,4 @@
-// Command server runs the threat exchange API or applies its database migrations.
+// Command server runs the threat exchange API.
 package main
 
 import (
@@ -28,24 +28,15 @@ func main() {
 }
 
 func run(logger *slog.Logger) error {
+	if len(os.Args) != 1 {
+		return fmt.Errorf("usage: server")
+	}
 	cfg, err := config.Load()
 	if err != nil {
 		return err
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	if len(os.Args) > 1 {
-		if len(os.Args) != 2 || os.Args[1] != "migrate" {
-			return fmt.Errorf("usage: server [migrate]")
-		}
-		migrationCtx, cancel := context.WithTimeout(ctx, time.Minute)
-		defer cancel()
-		if err := postgres.Migrate(migrationCtx, cfg.DatabaseURL); err != nil {
-			return err
-		}
-		logger.Info("migrations applied")
-		return nil
-	}
 	poolConfig, err := pgxpool.ParseConfig(cfg.DatabaseURL)
 	if err != nil {
 		return fmt.Errorf("invalid database connection configuration")
@@ -63,6 +54,12 @@ func run(logger *slog.Logger) error {
 	cancel()
 	if err != nil {
 		return fmt.Errorf("connect to database: %w", err)
+	}
+	migrationCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	err = postgres.Migrate(migrationCtx, cfg.DatabaseURL)
+	cancel()
+	if err != nil {
+		return err
 	}
 	handler, err := httpapi.New(postgres.New(pool), httpapi.Options{
 		APIKey: cfg.APIKey, RateLimit: cfg.RateLimit, MaxBodyBytes: cfg.MaxBodyBytes,
