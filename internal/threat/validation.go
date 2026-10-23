@@ -9,7 +9,6 @@ import (
 
 var md5Pattern = regexp.MustCompile(`^[a-fA-F0-9]{32}$`)
 
-// NormalizeMD5 validates the identifier and makes uniqueness case-insensitive.
 func NormalizeMD5(value string) (string, error) {
 	if !md5Pattern.MatchString(value) {
 		return "", fmt.Errorf("md5 must contain exactly 32 hexadecimal characters")
@@ -17,8 +16,6 @@ func NormalizeMD5(value string) (string, error) {
 	return strings.ToLower(value), nil
 }
 
-// NormalizeInput trims names and tags, validates limits in Unicode characters,
-// and rejects NUL characters which PostgreSQL text cannot store.
 func NormalizeInput(input Input) (Input, error) {
 	if err := validateText("name", input.Name, 255); err != nil {
 		return Input{}, err
@@ -40,27 +37,37 @@ func NormalizeInput(input Input) (Input, error) {
 	if err := validateText("description", input.Description, 4096); err != nil {
 		return Input{}, err
 	}
-	if len(input.Tags) > 20 {
-		return Input{}, fmt.Errorf("tags must contain at most 20 items")
-	}
-	tags := make([]string, 0, len(input.Tags))
-	seen := make(map[string]struct{}, len(input.Tags))
-	for _, tag := range input.Tags {
-		if err := validateText("tag", tag, 64); err != nil {
-			return Input{}, err
-		}
-		tag = strings.TrimSpace(tag)
-		if tag == "" {
-			return Input{}, fmt.Errorf("tags must not be blank")
-		}
-		if _, exists := seen[tag]; exists {
-			return Input{}, fmt.Errorf("tags must be unique after trimming")
-		}
-		seen[tag] = struct{}{}
-		tags = append(tags, tag)
+
+	tags, err := normalizeTags(input.Tags)
+	if err != nil {
+		return Input{}, err
 	}
 	input.Tags = tags
 	return input, nil
+}
+
+func normalizeTags(tags []string) ([]string, error) {
+	if len(tags) > 20 {
+		return nil, fmt.Errorf("tags must contain at most 20 items")
+	}
+
+	normalized := make([]string, 0, len(tags))
+	seen := make(map[string]struct{}, len(tags))
+	for _, tag := range tags {
+		if err := validateText("tag", tag, 64); err != nil {
+			return nil, err
+		}
+		tag = strings.TrimSpace(tag)
+		if tag == "" {
+			return nil, fmt.Errorf("tags must not be blank")
+		}
+		if _, exists := seen[tag]; exists {
+			return nil, fmt.Errorf("tags must be unique after trimming")
+		}
+		seen[tag] = struct{}{}
+		normalized = append(normalized, tag)
+	}
+	return normalized, nil
 }
 
 func validateText(field, value string, maxLength int) error {

@@ -44,7 +44,6 @@ func (s *server) decode(w http.ResponseWriter, r *http.Request, schema *openapi3
 		return false
 	}
 	if err := schema.VisitJSON(value); err != nil {
-		// Avoid echoing a full request (which may contain sensitive information) in schema errors.
 		var schemaError *openapi3.SchemaError
 		details := "Body does not match the OpenAPI schema"
 		if errors.As(err, &schemaError) {
@@ -60,8 +59,6 @@ func (s *server) decode(w http.ResponseWriter, r *http.Request, schema *openapi3
 	return true
 }
 
-// validateObject rejects duplicate keys and multiple JSON values before schema validation.
-// The contract only permits scalar values and an array of strings in this object.
 func validateObject(data []byte) error {
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	token, err := decoder.Token()

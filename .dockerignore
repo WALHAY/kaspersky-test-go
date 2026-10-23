@@ -3,6 +3,3 @@
 .env.*
 bin
 coverage.out
-*.pem
-*.key
-*.crt

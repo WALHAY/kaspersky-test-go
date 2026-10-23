@@ -1,18 +1,10 @@
-# Local configuration and secrets
 .env
 .env.*
 !.env.example
 
-# Build and test artifacts
 /bin/
 /server
 *.test
 /coverage.out
 
-# Local TLS certificates and private keys
-*.pem
-*.key
-*.crt
-
-# macOS metadata
 .DS_Store

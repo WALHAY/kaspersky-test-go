@@ -26,7 +26,6 @@ import (
 	"github.com/walhay/kaspersky-go/internal/threat"
 )
 
-// Each test owns a random schema and never truncates an existing database table.
 func database(t *testing.T) (*pgxpool.Pool, string) {
 	t.Helper()
 	databaseURL := os.Getenv("TEST_DATABASE_URL")

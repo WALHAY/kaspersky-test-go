@@ -12,6 +12,9 @@ linters:
     - unused
   exclusions:
     generated: strict
+    rules:
+      - path: ^api/generated\.go$
+        linters: [errcheck, govet, ineffassign, staticcheck, unused]
 formatters:
   enable:
     - gofmt

@@ -5,12 +5,11 @@ import (
 	"database/sql"
 	"fmt"
 
-	_ "github.com/jackc/pgx/v5/stdlib" // Register pgx for goose's database/sql interface.
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 	"github.com/walhay/kaspersky-go/migrations"
 )
 
-// Migrate applies all embedded migrations without requiring the goose CLI.
 func Migrate(ctx context.Context, databaseURL string) error {
 	db, err := sql.Open("pgx", databaseURL)
 	if err != nil {
