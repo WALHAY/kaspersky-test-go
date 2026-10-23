@@ -1,0 +1,291 @@
+openapi: 3.0.3
+info:
+  title: Information Exchange Service
+  description: |
+    API для обмена информацией об угрозах. MD5 используется как идентификатор,
+    приводится к нижнему регистру и не служит проверкой целостности или подписью.
+    PUT полностью заменяет изменяемые поля; пропущенные description и tags очищаются.
+    Все методы /info требуют X-API-Key. Лимит запросов применяется к IP соединения.
+  version: 1.0.0
+security:
+  - ApiKeyAuth: []
+paths:
+  /info:
+    post:
+      summary: Создать запись об угрозе
+      operationId: createThreat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThreatCreateRequest'
+      responses:
+        '201':
+          description: Запись создана
+          headers:
+            Location:
+              description: Путь к созданной записи
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThreatResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: MD5 уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          $ref: '#/components/responses/TooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /info/{md5}:
+    parameters:
+      - name: md5
+        in: path
+        required: true
+        description: MD5 файла, регистр не учитывается
+        schema:
+          $ref: '#/components/schemas/MD5'
+    get:
+      summary: Получить информацию об угрозе по MD5
+      operationId: getInfoByMd5
+      responses:
+        '200':
+          description: Информация об угрозе
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThreatResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      summary: Полностью заменить информацию об угрозе
+      description: MD5 и created_at сохраняются. Отсутствующая запись не создаётся.
+      operationId: updateThreat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThreatUpdateRequest'
+      responses:
+        '200':
+          description: Информация обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThreatResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          $ref: '#/components/responses/TooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  responses:
+    BadRequest:
+      description: Некорректный MD5 или тело запроса
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Отсутствует или неверен API-ключ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Угроза не найдена
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    TooLarge:
+      description: Тело запроса превышает MAX_BODY_BYTES (по умолчанию 64 КиБ)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnsupportedMediaType:
+      description: Требуется Content-Type application/json
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    RateLimited:
+      description: Превышен лимит запросов
+      headers:
+        Retry-After:
+          description: Число секунд до следующей попытки
+          schema:
+            type: integer
+            minimum: 1
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalError:
+      description: Внутренняя ошибка сервера
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    MD5:
+      type: string
+      pattern: '^[a-fA-F0-9]{32}$'
+      example: d41d8cd98f00b204e9800998ecf8427e
+    ThreatType:
+      type: string
+      description: Класс угрозы
+      enum: [trojan, virus, worm, ransomware, spyware, adware, rootkit, other]
+      example: trojan
+    Severity:
+      type: string
+      description: Уровень опасности
+      enum: [low, medium, high, critical]
+      example: high
+    ThreatCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [md5, name, type, severity]
+      properties:
+        md5:
+          $ref: '#/components/schemas/MD5'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          pattern: '\S'
+          description: Название угрозы. Пробелы по краям удаляются.
+          example: Trojan.Win32.Generic
+        type:
+          $ref: '#/components/schemas/ThreatType'
+        severity:
+          $ref: '#/components/schemas/Severity'
+        description:
+          type: string
+          maxLength: 4096
+          description: Описание поведения угрозы
+          example: Крадёт учётные данные браузера.
+        tags:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          description: Уникальные метки; пробелы по краям удаляются, регистр сохраняется.
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+            pattern: '\S'
+          example: [windows, credential-theft]
+    ThreatUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [name, type, severity]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          pattern: '\S'
+          example: Trojan.Win32.Generic
+        type:
+          $ref: '#/components/schemas/ThreatType'
+        severity:
+          $ref: '#/components/schemas/Severity'
+        description:
+          type: string
+          maxLength: 4096
+        tags:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+            pattern: '\S'
+    ThreatResponse:
+      type: object
+      additionalProperties: false
+      required: [md5, name, type, severity, description, tags, created_at, updated_at]
+      properties:
+        md5:
+          $ref: '#/components/schemas/MD5'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        type:
+          $ref: '#/components/schemas/ThreatType'
+        severity:
+          $ref: '#/components/schemas/Severity'
+        description:
+          type: string
+          maxLength: 4096
+          description: Пустая строка, если описание не задано
+        tags:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          description: Пустой массив, если метки не заданы
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Время создания в UTC (RFC 3339)
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Время последнего обновления в UTC (RFC 3339)
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [message]
+      properties:
+        message:
+          type: string
+          example: Threat not found
+        details:
+          type: string
+          example: No threat with the specified MD5 exists
